@@ -12,16 +12,16 @@ use async_std::io::Result;
 type ClientListener = fn(client: &Client);
 
 #[derive(Debug, Enum)]
-enum ClientEvent {
+pub enum ClientEvent {
     Connect,
     Disconnect
 }
 
 // https://docs.rs/async-std/0.99.4/async_std/sync/struct.Mutex.html
 pub struct Client {
-    tcp_stream: Option<TcpStream>,
-    packet_queue: Vec<Packet>,
-    listeners: EnumMap<ClientEvent, Vec<ClientListener>>
+    pub tcp_stream: Option<TcpStream>,
+    pub packet_queue: Vec<Packet>,
+    pub listeners: EnumMap<ClientEvent, Vec<ClientListener>>
 }
 
 impl Default for Client {
@@ -55,15 +55,24 @@ impl Client {
         self.tcp_stream.is_some()
     }
 
-    pub async fn connect(&mut self, ip: SocketAddr) {
-        self.tcp_stream = Some(TcpStream::connect(ip).await.unwrap());
-
+    pub async fn connect(&mut self, ip: SocketAddr) -> Result<()> {
+        
+        let tcp_stream = TcpStream::connect(ip).await?;
+        tcp_stream.nodelay().unwrap();
+        //tcp_stream.
+        
+        self.tcp_stream = Some(tcp_stream);
+        
+        
         for listener in &self.listeners[ClientEvent::Connect] {
             listener(self);
         }
+        
+        Ok(())
     }
 
     pub async fn disconnect(&mut self) {
+
         self.tcp_stream.as_ref().unwrap().shutdown(Shutdown::Both).unwrap();
         self.tcp_stream = None;
 
@@ -83,7 +92,8 @@ impl Client {
 
 
     pub async fn read_bytes(&mut self, size: usize) -> Result<Vec<u8>> {
-        let mut buffer = Vec::with_capacity(size);
+
+        let mut buffer = vec![0; size];
         let result = self.tcp_stream.as_ref().unwrap().read_exact(&mut buffer).await;
 
         if let Err(err) = result {
@@ -155,15 +165,22 @@ impl Client {
     }
 
 
+    pub async fn read_utf8(&mut self) -> Result<String> {
+        let size = self.read_i16().await.unwrap() as usize;
+        Ok(self.read_bytes(size).await?.to_utf8())
+    }
+
+
     pub async fn write(&mut self, packet: Packet) {
         self.packet_queue.push(packet)
     }
 
     pub async fn flush(&mut self) {
-        let tcp_stream = self.tcp_stream.borrow_mut();
+
+        let mut tcp_stream = self.tcp_stream.borrow_mut().as_ref().unwrap();
 
         for packet in self.packet_queue.drain(0..) {
-            tcp_stream.as_ref().unwrap().write_all(&packet.write_buffer).await.unwrap();
+            tcp_stream.write_all(&packet.write_buffer).await.unwrap();
         }
     }
 

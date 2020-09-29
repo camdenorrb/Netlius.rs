@@ -40,47 +40,47 @@ impl BytesExt for [u8] {
     }
 
     fn to_i16(&self) -> i16 {
-        i16::from_le_bytes(self.try_into().unwrap())
+        i16::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_i32(&self) -> i32 {
-        i32::from_le_bytes(self.try_into().unwrap())
+        i32::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_i64(&self) -> i64 {
-        i64::from_le_bytes(self.try_into().unwrap())
+        i64::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_i128(&self) -> i128 {
-        i128::from_le_bytes(self.try_into().unwrap())
+        i128::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_f32(&self) -> f32 {
-        f32::from_le_bytes(self.try_into().unwrap())
+        f32::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_f64(&self) -> f64 {
-        f64::from_le_bytes(self.try_into().unwrap())
+        f64::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_u8(&self) -> u8 {
-        u8::from_le_bytes(self.try_into().unwrap())
+        u8::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_u16(&self) -> u16 {
-        u16::from_le_bytes(self.try_into().unwrap())
+        u16::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_u32(&self) -> u32 {
-        u32::from_le_bytes(self.try_into().unwrap())
+        u32::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_u64(&self) -> u64 {
-        u64::from_le_bytes(self.try_into().unwrap())
+        u64::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_u128(&self) -> u128 {
-        u128::from_le_bytes(self.try_into().unwrap())
+        u128::from_be_bytes(self.try_into().unwrap())
     }
 
     fn to_utf8(&self) -> String {
