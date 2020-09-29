@@ -1,5 +1,5 @@
 [package]
-name = "Netlius"
+name = "netlius"
 version = "0.1.0"
 authors = ["camdenorrb <5360339+camdenorrb@users.noreply.github.com>"]
 edition = "2018"

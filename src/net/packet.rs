@@ -8,7 +8,7 @@ pub struct Packet {
 
 impl Packet {
 
-    fn new() -> Packet {
+    pub fn new() -> Packet {
         Packet {
             write_buffer: vec![],
             is_prepending: false,
@@ -17,80 +17,85 @@ impl Packet {
     }
 
 
-    fn i8(&mut self, value: i8) {
-        self.bytes(&value.to_le_bytes())
+    pub fn i8(self, value: i8) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
-    fn i16(&mut self, value: i16) {
-        self.bytes(&value.to_le_bytes())
+    pub fn i16(self, value: i16) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
-    fn i32(&mut self, value: i32) {
-        self.bytes(&value.to_le_bytes())
+    pub fn i32(self, value: i32) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
-    fn i64(&mut self, value: i64) {
-        self.bytes(&value.to_le_bytes())
+    pub fn i64(self, value: i64) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
-    fn i128(&mut self, value: i128) {
-        self.bytes(&value.to_le_bytes())
-    }
-
-
-    fn f32(&mut self, value: f32) {
-        self.bytes(&value.to_le_bytes())
-    }
-
-    fn f64(&mut self, value: f64) {
-        self.bytes(&value.to_le_bytes())
+    pub fn i128(self, value: i128) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
 
-    fn u8(&mut self, value: u8) {
-        self.bytes(&value.to_le_bytes())
+    pub fn f32(self, value: f32) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
-    fn u16(&mut self, value: u16) {
-        self.bytes(&value.to_le_bytes())
-    }
-
-    fn u32(&mut self, value: u32) {
-        self.bytes(&value.to_le_bytes())
-    }
-
-    fn u64(&mut self, value: u64) {
-        self.bytes(&value.to_le_bytes())
-    }
-
-    fn u128(&mut self, value: u128) {
-        self.bytes(&value.to_le_bytes())
+    pub fn f64(self, value: f64) -> Packet {
+        self.bytes(&value.to_be_bytes())
     }
 
 
-    fn utf8(&mut self, string: &str) {
+    pub fn u8(self, value: u8) -> Packet {
+        self.bytes(&value.to_be_bytes())
+    }
+
+    pub fn u16(self, value: u16) -> Packet {
+        self.bytes(&value.to_be_bytes())
+    }
+
+    pub fn u32(self, value: u32) -> Packet {
+        self.bytes(&value.to_be_bytes())
+    }
+
+    pub fn u64(self, value: u64) -> Packet {
+        self.bytes(&value.to_be_bytes())
+    }
+
+    pub fn u128(self, value: u128) -> Packet {
+        self.bytes(&value.to_be_bytes())
+    }
+
+
+    pub fn utf8(self, string: &str) -> Packet {
         self.bytes(string.as_bytes())
     }
 
 
-    fn bytes(&mut self, values: &[u8]) {
+    pub fn bytes(mut self, values: &[u8]) -> Packet {
+
         if self.is_prepending {
             self.prepend_write_queue.write_all(values).unwrap();
         }
         else {
             self.write_buffer.write_all(values).unwrap();
         }
+
+        self
     }
 
 
     #[inline]
-    fn prepend(&mut self, block: fn(packet: &mut Packet)) {
+    pub fn prepend(mut self, block: fn(packet: &mut Packet)) -> Packet {
 
         self.is_prepending = true;
-        block(self);
+        block(&mut self);
         self.is_prepending = false;
 
         self.write_buffer.splice(0..0, self.prepend_write_queue.drain(0..));
+
+        self
     }
 
 }
