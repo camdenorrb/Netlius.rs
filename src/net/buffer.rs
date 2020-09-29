@@ -166,8 +166,8 @@ impl ByteBuffer {
     }
 
     pub fn clear(&mut self) {
-        self.position = 0;
         self.limit = self.backend.len();
+        self.position = 0;
     }
 
 }

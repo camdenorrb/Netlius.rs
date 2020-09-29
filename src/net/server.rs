@@ -27,7 +27,7 @@ impl Server {
                 let client = Client::new(stream);
 
                 //weak.upgrade();//.unwrap().clients.push(client)
-                //self.clients.push(client);
+                self.clients.push(client);
 
                 //let mut client = self.clients.last().unwrap();
                 //let (reader, writer) = &mut (&client.tcp_stream.unwrap(), &client.tcp_stream.unwrap());
