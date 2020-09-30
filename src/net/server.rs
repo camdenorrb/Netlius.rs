@@ -1,14 +1,14 @@
 use crate::net::client::Client;
-use async_std::io;
+
 use async_std::net::{TcpListener, SocketAddr};
 use async_std::prelude::*;
 use async_std::task::spawn;
-use std::borrow::{Borrow, BorrowMut};
-use async_std::sync::{Arc, Weak};
+use async_std::sync::{Arc, Mutex};
+use async_std::io;
 
 pub struct Server {
     pub address: String,
-    pub clients: Vec<Client>
+    pub clients: Arc<Mutex<Vec<Client>>>,
 }
 
 impl Server {
@@ -16,25 +16,30 @@ impl Server {
     pub async fn start(&mut self) {
 
         let address = self.address.parse().unwrap();
+        let clients = self.clients.clone();
 
-        let listener = TcpListener::bind::<SocketAddr>(address).await.unwrap();
-        let mut incoming = listener.incoming();
+        spawn(async move {
 
-        while let Some(stream) = incoming.next().await {
-            spawn(async move {
+            let listener = TcpListener::bind::<SocketAddr>(address).await.unwrap();
+            let mut incoming = listener.incoming();
 
-                let stream = stream.unwrap();
-                let client = Client::new(stream);
+            while let Some(stream) = incoming.next().await {
 
-                //weak.upgrade();//.unwrap().clients.push(client)
-                self.clients.push(client);
+                let clients = clients.clone();
 
-                //let mut client = self.clients.last().unwrap();
-                //let (reader, writer) = &mut (&client.tcp_stream.unwrap(), &client.tcp_stream.unwrap());
+                spawn(async move {
 
-                //io::copy(reader, writer).await.unwrap();
-            });
-        }
+                    let stream = stream.unwrap();
+                    let (reader, writer) = &mut (&stream, &stream);
+
+                    io::copy(reader, writer).await.unwrap();
+
+                    let client = Client::new(stream);
+                    clients.lock().await.push(client);
+                });
+            }
+        });
+
     }
 
     pub fn stop(&self) {

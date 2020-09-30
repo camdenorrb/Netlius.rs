@@ -2,8 +2,7 @@
 
 use crate::net::client::Client;
 use crate::net::server::Server;
-use async_std::net::TcpListener;
-use async_std::net::SocketAddr;
+use async_std::sync::{Arc, Mutex};
 
 pub mod net;
 pub mod data;
@@ -31,7 +30,7 @@ impl Netlius {
 
         let mut server = Server {
             address: address.to_string(),
-            clients: vec![]
+            clients: Arc::new(Mutex::new(Vec::new()))
         };
 
         server.start().await;

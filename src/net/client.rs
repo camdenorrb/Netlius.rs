@@ -1,6 +1,5 @@
 use enum_map::{enum_map, Enum, EnumMap};
 use async_std::net::{TcpStream, Shutdown};
-use std::borrow::BorrowMut;
 use crate::net::packet::Packet;
 use crate::net::buffer::ByteBuffer;
 use std::mem;
@@ -8,6 +7,7 @@ use crate::extensions::bytes::BytesExt;
 use async_std::net::{SocketAddr};
 use async_std::prelude::*;
 use async_std::io::Result;
+use async_std::sync::Arc;
 
 type ClientListener = fn(client: &Client);
 
@@ -19,7 +19,7 @@ pub enum ClientEvent {
 
 // https://docs.rs/async-std/0.99.4/async_std/sync/struct.Mutex.html
 pub struct Client {
-    pub tcp_stream: Option<TcpStream>,
+    pub tcp_stream: Arc<Option<TcpStream>>,
     pub packet_queue: Vec<Packet>,
     pub listeners: EnumMap<ClientEvent, Vec<ClientListener>>
 }
@@ -27,7 +27,7 @@ pub struct Client {
 impl Default for Client {
     fn default() -> Self {
         Client {
-            tcp_stream: None,
+            tcp_stream: Arc::new(None),
             packet_queue: vec![],
             listeners: enum_map! {
                 ClientEvent::Connect    => Vec::new(),
@@ -41,7 +41,7 @@ impl Client {
 
     pub fn new(tcp_stream: TcpStream) -> Client {
         Client {
-            tcp_stream: Some(tcp_stream),
+            tcp_stream: Arc::new(Some(tcp_stream)),
             packet_queue: vec![],
             listeners: enum_map! {
                 ClientEvent::Connect    => Vec::new(),
@@ -61,7 +61,7 @@ impl Client {
         tcp_stream.nodelay().unwrap();
         //tcp_stream.
         
-        self.tcp_stream = Some(tcp_stream);
+        self.tcp_stream = Arc::new(Some(tcp_stream));
         
         
         for listener in &self.listeners[ClientEvent::Connect] {
@@ -73,8 +73,8 @@ impl Client {
 
     pub async fn disconnect(&mut self) {
 
-        self.tcp_stream.as_ref().unwrap().shutdown(Shutdown::Both).unwrap();
-        self.tcp_stream = None;
+        self.tcp_stream.as_ref().as_ref().unwrap().shutdown(Shutdown::Both).unwrap();
+        self.tcp_stream = Arc::new(None);
 
         for listener in &self.listeners[ClientEvent::Disconnect] {
             listener(self);
@@ -94,7 +94,7 @@ impl Client {
     pub async fn read_bytes(&mut self, size: usize) -> Result<Vec<u8>> {
 
         let mut buffer = vec![0; size];
-        let result = self.tcp_stream.as_ref().unwrap().read_exact(&mut buffer).await;
+        let result = self.tcp_stream.as_ref().as_ref().unwrap().read_exact(&mut buffer).await;
 
         if let Err(err) = result {
             self.disconnect().await;
@@ -177,7 +177,7 @@ impl Client {
 
     pub async fn flush(&mut self) {
 
-        let mut tcp_stream = self.tcp_stream.borrow_mut().as_ref().unwrap();
+        let mut tcp_stream = self.tcp_stream.as_ref().as_ref().unwrap();
 
         for packet in self.packet_queue.drain(0..) {
             tcp_stream.write_all(&packet.write_buffer).await.unwrap();

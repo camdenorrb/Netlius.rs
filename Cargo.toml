@@ -1,5 +1,5 @@
 [package]
-name = "netlius"
+name = "Netlius"
 version = "0.1.0"
 authors = ["camdenorrb <5360339+camdenorrb@users.noreply.github.com>"]
 edition = "2018"
@@ -12,3 +12,15 @@ enum-map= "0.6.3"
 [dependencies.async-std]
 version = "*"
 features = ["attributes"]
+
+[profile.release]
+
+opt-level     = 3
+codegen-units = 1
+
+lto   = true
+debug = false
+
+incremental      = false
+overflow-checks  = false
+debug-assertions = false
