@@ -30,7 +30,6 @@ impl Netlius {
 
         let mut server = Server {
             address: address.to_string(),
-            clients: Arc::new(Mutex::new(Vec::new()))
         };
 
         server.start().await;
