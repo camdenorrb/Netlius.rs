@@ -8,6 +8,7 @@ use async_std::net::{SocketAddr};
 //use async_std::prelude::*;
 use async_std::io::Result;
 use futures::{AsyncWriteExt, AsyncReadExt};
+use async_std::sync::Arc;
 //use futures::{AsyncReadExt, AsyncWriteExt};
 
 type ClientListener = fn(client: &Client);
@@ -21,7 +22,7 @@ pub enum ClientEvent {
 // https://docs.rs/async-std/0.99.4/async_std/sync/struct.Mutex.html
 pub struct Client {
     pub tcp_stream: Option<TcpStream>,
-    pub packet_queue: Vec<Packet>,
+    pub packet_queue: Vec<Arc<Packet>>,
     pub listeners: EnumMap<ClientEvent, Vec<ClientListener>>
 }
 
@@ -172,8 +173,12 @@ impl Client {
     }
 
 
-    pub async fn write(&mut self, packet: Packet) {
-        self.packet_queue.push(packet)
+    pub async fn write_packet(&mut self, packet: Packet) {
+        self.write_packet_arc(Arc::new(packet)).await;
+    }
+
+    pub async fn write_packet_arc(&mut self, packet: Arc<Packet>) {
+        self.packet_queue.push(packet);
     }
 
     pub async fn flush(&mut self) {
@@ -185,9 +190,12 @@ impl Client {
         }
     }
 
-    pub async fn write_and_flush(&mut self, packet: Packet) {
-        self.write(packet).await;
-        self.flush().await;
+    pub async fn write_and_flush_packet(&mut self, packet: Packet) {
+        self.write_and_flush_packet_arc(Arc::new(packet)).await;
     }
 
+    pub async fn write_and_flush_packet_arc(&mut self, packet: Arc<Packet>) {
+        self.write_packet_arc(packet).await;
+        self.flush().await;
+    }
 }

@@ -1,6 +1,8 @@
 // Say fuck no to Mutex, use Holder today!
 // Btw this is very unsafe
 
+// TODO: Maybe use an UnsafeCell internally and manually inherit Send and Sync for Holder
+
 #[repr(transparent)]
 pub struct Holder<T: ?Sized> {
     value: T
