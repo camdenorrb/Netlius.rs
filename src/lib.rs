@@ -3,7 +3,7 @@
 
 use crate::net::client::Client;
 use crate::net::server::Server;
-use async_std::sync::{Arc, Mutex};
+use async_std::sync::{Arc};
 
 pub mod net;
 pub mod data;
@@ -19,6 +19,8 @@ impl Default for Netlius {
 }
 
 impl Netlius {
+
+    // TODO: Store a threadpool in netlius and pass to Client and Server
 
     pub async fn client(&self, address: &str) -> Client {
 

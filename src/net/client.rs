@@ -2,13 +2,13 @@ use enum_map::{enum_map, Enum, EnumMap};
 use async_std::net::{TcpStream, Shutdown};
 use crate::net::packet::Packet;
 use crate::net::buffer::ByteBuffer;
-use std::mem;
 use crate::extensions::bytes::BytesExt;
 use async_std::net::{SocketAddr};
 //use async_std::prelude::*;
 use async_std::io::Result;
 use futures::{AsyncWriteExt, AsyncReadExt};
 use async_std::sync::Arc;
+use core::mem;
 //use futures::{AsyncReadExt, AsyncWriteExt};
 
 type ClientListener = fn(client: &Client);

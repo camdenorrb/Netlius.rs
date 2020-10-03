@@ -7,7 +7,7 @@ use async_std::sync::{Arc, Mutex};
 use futures::{StreamExt, AsyncReadExt};
 use async_std::io;
 use crate::async_utils::suspend::Suspend;
-use crate::async_utils::holder::Holder;
+use crate::async_utils::holder::UnsafeHolder;
 
 
 pub struct Server {
@@ -23,7 +23,7 @@ impl Server {
         let address = self.address.parse().unwrap();
         let clients = self.clients.clone();
 
-        let server_start_suspend = Arc::new(Holder::new(Suspend::new(true)));
+        let server_start_suspend = Arc::new(UnsafeHolder::new(Suspend::new(true)));
         let server_start_suspend_clone = server_start_suspend.clone();
 
         spawn(async move {

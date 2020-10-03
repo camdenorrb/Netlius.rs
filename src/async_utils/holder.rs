@@ -4,21 +4,21 @@
 // TODO: Maybe use an UnsafeCell internally and manually inherit Send and Sync for Holder
 
 #[repr(transparent)]
-pub struct Holder<T: ?Sized> {
+pub struct UnsafeHolder<T: ?Sized> {
     value: T
 }
 
-impl<T> Holder<T> {
+impl<T> UnsafeHolder<T> {
 
-    pub fn new(value: T) -> Holder<T> {
-        Holder {
+    pub fn new(value: T) -> UnsafeHolder<T> {
+        UnsafeHolder {
             value
         }
     }
 
 
     pub unsafe fn get(&self) -> *mut T {
-        self as *const Holder<T> as *const T as *mut T
+        self as *const UnsafeHolder<T> as *const T as *mut T
     }
 
     #[allow(clippy::mut_from_ref)]

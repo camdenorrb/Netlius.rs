@@ -2,20 +2,20 @@ use async_std::task::{Context, Poll, Waker};
 use async_std::pin::Pin;
 use async_std::prelude::Future;
 use async_std::sync::{Arc};
-use crate::async_utils::holder::Holder;
+use crate::async_utils::holder::UnsafeHolder;
 
 // You need to use a Holder rather than a Mutex to utilize this
 
 pub struct Suspend {
     should_suspend: bool,
-    wakers: Arc<Holder<Vec<Waker>>>
+    wakers: Arc<UnsafeHolder<Vec<Waker>>>
 }
 
 impl Default for Suspend {
     fn default() -> Self {
         Suspend {
             should_suspend: false,
-            wakers: Arc::new(Holder::new(Vec::new()))
+            wakers: Arc::new(UnsafeHolder::new(Vec::new()))
         }
     }
 }
@@ -25,7 +25,7 @@ impl Suspend {
     pub fn new(should_suspend: bool) -> Suspend {
         Suspend {
             should_suspend,
-            wakers: Arc::new(Holder::new(Vec::new()))
+            wakers: Arc::new(UnsafeHolder::new(Vec::new()))
         }
     }
 
