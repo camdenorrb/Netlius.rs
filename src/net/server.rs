@@ -7,15 +7,20 @@ use async_std::sync::{Arc, Mutex, Condvar, MutexGuard, RwLock};
 use futures::{StreamExt, AsyncReadExt};
 use async_std::io;
 use crate::async_utils::suspend::Suspend;
-use std::ops::{DerefMut, Deref};
-use std::borrow::BorrowMut;
-use std::cell::{Cell, UnsafeCell};
+use async_std::prelude::Future;
+use async_std::pin::Pin;
+use std::cell::{UnsafeCell, Cell};
+use std::ops::{Deref, DerefMut};
+use std::borrow::{Borrow, BorrowMut};
+use crate::async_utils::holder::Holder;
 
 
 pub struct Server {
     pub address: String,
     pub clients: Arc<Mutex<Vec<Arc<Mutex<Client>>>>>,
 }
+
+
 
 impl Server {
 
@@ -25,8 +30,8 @@ impl Server {
         let address = self.address.parse().unwrap();
         let clients = self.clients.clone();
 
-        let mut server_start_suspend = Arc::new(UnsafeCell::new(Suspend::new(true)));
-        let mut server_start_suspend_clone = server_start_suspend.clone();
+        let server_start_suspend = Arc::new(Holder::new(Suspend::new(true)));
+        let server_start_suspend_clone = server_start_suspend.clone();
 
         spawn(async move {
 
@@ -34,7 +39,7 @@ impl Server {
             let listener = TcpListener::bind::<SocketAddr>(address).await.unwrap();
             let incoming = listener.incoming();
 
-            server_start_suspend_clone.get_mut().unsuspend();
+            server_start_suspend_clone.get_mut().unsuspend().await;
 
             incoming.for_each_concurrent(None, |stream| async {
 
@@ -59,7 +64,6 @@ impl Server {
         });
 
         server_start_suspend.get_mut().await;
-        println!("Here2");
     }
 
 
