@@ -1,21 +1,23 @@
 use std::io::Write;
 
+#[derive(Clone)]
 pub struct Packet {
     pub(crate) write_buffer: Vec<u8>,
     pub(crate) is_prepending: bool,
     pub(crate) prepend_write_queue: Vec<u8>
 }
 
-impl Packet {
-
-    pub fn new() -> Self {
+impl Default for Packet {
+    fn default() -> Self {
         Packet {
             write_buffer: vec![],
             is_prepending: false,
             prepend_write_queue: vec![]
         }
     }
+}
 
+impl Packet {
 
     pub fn i8(self, value: i8) -> Self {
         self.bytes(&value.to_be_bytes())

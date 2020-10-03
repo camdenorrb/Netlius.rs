@@ -1,4 +1,5 @@
 // Say fuck no to Mutex, use Holder today!
+// Btw this is very unsafe
 
 #[repr(transparent)]
 pub struct Holder<T: ?Sized> {
@@ -13,13 +14,14 @@ impl<T> Holder<T> {
         }
     }
 
-    pub fn get(&self) -> *mut T {
+
+    pub unsafe fn get(&self) -> *mut T {
         self as *const Holder<T> as *const T as *mut T
     }
 
     #[allow(clippy::mut_from_ref)]
-    pub(crate) fn get_mut(&self) -> &mut T {
-        unsafe { &mut *self.get() }
+    pub unsafe fn get_mut(&self) -> &mut T {
+        &mut *self.get()
     }
 
 }
