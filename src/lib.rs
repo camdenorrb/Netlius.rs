@@ -1,3 +1,4 @@
+#![feature(unsafe_cell_get_mut)]
 //#![feature(async_closure)]
 
 use crate::net::client::Client;
@@ -6,6 +7,7 @@ use async_std::sync::{Arc, Mutex};
 
 pub mod net;
 pub mod data;
+pub mod async_utils;
 pub mod extensions;
 
 pub struct Netlius {}
@@ -30,6 +32,7 @@ impl Netlius {
 
         let mut server = Server {
             address: address.to_string(),
+            clients: Arc::new(Default::default())
         };
 
         server.start().await;

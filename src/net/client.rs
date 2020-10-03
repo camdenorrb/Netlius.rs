@@ -5,9 +5,10 @@ use crate::net::buffer::ByteBuffer;
 use std::mem;
 use crate::extensions::bytes::BytesExt;
 use async_std::net::{SocketAddr};
-use async_std::prelude::*;
+//use async_std::prelude::*;
 use async_std::io::Result;
-use async_std::sync::Arc;
+use futures::{AsyncWriteExt, AsyncReadExt};
+//use futures::{AsyncReadExt, AsyncWriteExt};
 
 type ClientListener = fn(client: &Client);
 

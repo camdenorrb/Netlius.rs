@@ -1,62 +1,68 @@
 use crate::net::client::Client;
 
 use async_std::net::{TcpListener, SocketAddr};
-use async_std::prelude::*;
-use async_std::task::{spawn, JoinHandle};
-use futures::StreamExt;
+use async_std::task::{spawn};
+
+use async_std::sync::{Arc, Mutex, Condvar, MutexGuard, RwLock};
+use futures::{StreamExt, AsyncReadExt};
+use async_std::io;
+use crate::async_utils::suspend::Suspend;
+use std::ops::{DerefMut, Deref};
+use std::borrow::BorrowMut;
+use std::cell::{Cell, UnsafeCell};
 
 
 pub struct Server {
     pub address: String,
-    pub clients: Vec<Client>,
+    pub clients: Arc<Mutex<Vec<Arc<Mutex<Client>>>>>,
 }
 
 impl Server {
 
-    // TODO: Maybe move self
-    pub async fn start(&mut self) -> JoinHandle<()> {
-
-        let thing = Arc::RefCell::new(self);
-        "".to_owned();
-
+    // TODO: Use a threadpool for spawn
+    pub async fn start(&mut self) {
 
         let address = self.address.parse().unwrap();
-        //let clients = self.clients.clone();
+        let clients = self.clients.clone();
 
-        let job = async_std::task::spawn(async move {
+        let mut server_start_suspend = Arc::new(UnsafeCell::new(Suspend::new(true)));
+        let mut server_start_suspend_clone = server_start_suspend.clone();
 
+        spawn(async move {
+
+            let clients = clients.clone();
             let listener = TcpListener::bind::<SocketAddr>(address).await.unwrap();
-            let mut incoming = listener.incoming();
-            incoming.for_each_concurrent()
+            let incoming = listener.incoming();
 
-            let mut clients = self.clients;
+            server_start_suspend_clone.get_mut().unsuspend();
 
-            while let Some(stream) = incoming.next().await {
+            incoming.for_each_concurrent(None, |stream| async {
 
-                let client = Client::new(stream.unwrap());
+                let clients = clients.clone();
+                let client_arc = Arc::new(Mutex::new(Client::new(stream.unwrap())));
 
-                clients.push(client);
-
-                let client = clients.last_mut().unwrap();
+                clients.lock().await.push(client_arc.clone());
 
                 spawn(async move {
 
                     // TODO: Call connect listeners here and remove rest
 
-                    let stream = client.tcp_stream.as_ref().unwrap();
-                    let (reader, writer) = &mut (stream, stream);
+                    let client_arc = client_arc.clone();
+                    let client = client_arc.lock().await;
+                    let (mut reader, mut writer) = client.tcp_stream.as_ref().unwrap().split();
 
                     loop {
-                        io::copy(reader, writer).await.unwrap();
+                        io::copy(&mut reader, &mut writer).await.unwrap();
                     }
                 });
-
-
-            }
+            }).await;
         });
 
-        return job;
+        server_start_suspend.get_mut().await;
+        println!("Here2");
     }
+
+
 
     /*
     pub fn stop(&self) {
@@ -66,7 +72,6 @@ impl Server {
 
 
     pub fn on_connect(&self, listener: fn (&Client)) {
-
     }
 
     pub fn on_disconnect(&self, listener: fn (&Client)) {
