@@ -37,8 +37,10 @@ impl Suspend {
 
         self.should_suspend = false;
 
-        for _ in 0..self.wakers.get_mut().len() {
-            self.wakers.get_mut().remove(0).wake();
+        unsafe {
+            for _ in 0..self.wakers.get_mut().len() {
+                self.wakers.get_mut().remove(0).wake();
+            }
         }
     }
 
@@ -51,7 +53,11 @@ impl Future for Suspend {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.should_suspend {
             true  => {
-                self.wakers.get_mut().push(cx.waker().clone());
+
+                unsafe {
+                    self.wakers.get_mut().push(cx.waker().clone());
+                }
+
                 Poll::Pending
             },
             false => Poll::Ready(())
