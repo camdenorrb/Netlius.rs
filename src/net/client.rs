@@ -9,9 +9,10 @@ use async_std::io::Result;
 use futures::{AsyncWriteExt, AsyncReadExt};
 use async_std::sync::Arc;
 use core::mem;
+use async_std::pin::Pin;
 //use futures::{AsyncReadExt, AsyncWriteExt};
 
-type ClientListener = Box<dyn Fn(&Client)>;
+type ClientListener = Arc<dyn Fn(&Client) + Send + Sync>;
 
 #[derive(Debug, Enum)]
 pub enum ClientEvent {
@@ -84,11 +85,11 @@ impl Client {
     }
 
 
-    pub fn on_connect(&mut self, listener: Box<dyn Fn(&Client)>) {
+    pub fn on_connect(&mut self, listener: ClientListener) {
         self.listeners[ClientEvent::Connect].push(listener)
     }
 
-    pub fn on_disconnect(&mut self, listener: Box<dyn Fn(&Client)>) {
+    pub fn on_disconnect<F>(&mut self, listener: ClientListener) {
         self.listeners[ClientEvent::Disconnect].push(listener)
     }
 
@@ -181,6 +182,7 @@ impl Client {
         self.packet_queue.push(packet);
     }
 
+
     pub async fn flush(&mut self) {
 
         let mut tcp_stream = self.tcp_stream.as_ref().unwrap();
@@ -199,3 +201,6 @@ impl Client {
         self.flush().await;
     }
 }
+
+unsafe impl Send for Client {}
+unsafe impl Sync for Client {}
