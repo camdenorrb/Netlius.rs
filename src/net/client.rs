@@ -9,7 +9,7 @@ use async_std::io::Result;
 use futures::{AsyncWriteExt, AsyncReadExt};
 use async_std::sync::Arc;
 use core::mem;
-use async_std::pin::Pin;
+use uuid::Uuid;
 //use futures::{AsyncReadExt, AsyncWriteExt};
 
 type ClientListener = Arc<dyn Fn(&Client) + Send + Sync>;
@@ -22,6 +22,7 @@ pub enum ClientEvent {
 
 // https://docs.rs/async-std/0.99.4/async_std/sync/struct.Mutex.html
 pub struct Client {
+    pub uuid: Uuid,
     pub tcp_stream: Option<TcpStream>,
     pub packet_queue: Vec<Arc<Packet>>,
     pub listeners: EnumMap<ClientEvent, Vec<ClientListener>>
@@ -30,6 +31,7 @@ pub struct Client {
 impl Default for Client {
     fn default() -> Self {
         Client {
+            uuid: Uuid::new_v4(),
             tcp_stream: None,
             packet_queue: vec![],
             listeners: enum_map! {
@@ -44,6 +46,7 @@ impl Client {
 
     pub fn new(tcp_stream: TcpStream) -> Client {
         Client {
+            uuid: Uuid::new_v4(),
             tcp_stream: Some(tcp_stream),
             packet_queue: vec![],
             listeners: enum_map! {
@@ -89,7 +92,7 @@ impl Client {
         self.listeners[ClientEvent::Connect].push(listener)
     }
 
-    pub fn on_disconnect<F>(&mut self, listener: ClientListener) {
+    pub fn on_disconnect(&mut self, listener: ClientListener) {
         self.listeners[ClientEvent::Disconnect].push(listener)
     }
 

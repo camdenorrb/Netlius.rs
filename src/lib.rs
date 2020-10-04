@@ -34,6 +34,9 @@ impl Netlius {
 
         let mut server = Server {
             address: address.to_string(),
+            task: None,
+            connect_listeners: Arc::new(Default::default()),
+            disconnect_listeners: Arc::new(Default::default()),
             clients: Arc::new(Default::default())
         };
 

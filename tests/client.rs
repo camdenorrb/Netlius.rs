@@ -9,7 +9,7 @@ fn send_basic_message() {
         let netlius = Netlius::default();
         let mut client = netlius.client("127.0.0.1:12345").await;
 
-        client.write_and_flush(Packet::new().utf8("Meow")).await;
+        client.write_and_flush_packet(Packet::default().utf8("Meow")).await;
 
         println!("{}", client.read_utf8().await.unwrap());
     });

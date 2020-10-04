@@ -9,7 +9,11 @@ edition = "2018"
 [dependencies]
 enum-map = "0.6.3"
 futures  = "0.3.5"
-arc_swap = "0.4.7"
+arc-swap = "0.4.7"
+
+[dependencies.uuid]
+version = "0.8.1"
+features = ["v4"]
 
 [dependencies.async-std]
 version = "1.6.5"

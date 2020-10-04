@@ -15,8 +15,15 @@ fn basic_server_test() {
 
         let netlius = netlius::Netlius {};
 
-        let server     = netlius.server("127.0.0.1:12345").await;
+        let mut server = netlius.server("127.0.0.1:12345").await;
         let mut client = netlius.client("127.0.0.1:12345").await;
+
+        // TODO: Future with parameter?
+        server.on_connect(Arc::new(|client| {
+            block_on(async move {
+                client.write_and_flush_packet(Packet::default().utf8("Meow")).await;
+            });
+        })).await;
 
         client.write_and_flush_packet(Packet::default().utf8("Meow")).await;
 
