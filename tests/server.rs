@@ -3,11 +3,12 @@
 #![feature(test)]
 extern crate test;
 
-use async_std::task::block_on;
-use netlius::net::packet::Packet;
 use test::Bencher;
-use async_std::sync::Arc;
 
+use async_std::sync::Arc;
+use async_std::task::block_on;
+
+use netlius::net::packet::Packet;
 
 #[test]
 fn basic_server_test() {

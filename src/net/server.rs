@@ -1,15 +1,15 @@
-use crate::net::client::Client;
-
-use async_std::net::{TcpListener, SocketAddr};
-use async_std::task::{spawn, JoinHandle};
-
-use async_std::sync::{Arc, Mutex};
-use futures::{StreamExt};
-use crate::async_utils::suspend::Suspend;
-use crate::async_utils::holder::UnsafeHolder;
-use futures::executor::block_on;
-use std::ops::{Deref, DerefMut};
 use std::borrow::BorrowMut;
+use std::ops::{Deref, DerefMut};
+
+use async_std::net::{SocketAddr, TcpListener};
+use async_std::sync::{Arc, Mutex};
+use async_std::task::{JoinHandle, spawn};
+use futures::executor::block_on;
+use futures::StreamExt;
+
+use crate::async_utils::holder::UnsafeHolder;
+use crate::async_utils::suspend::Suspend;
+use crate::net::client::Client;
 
 pub struct Server {
     pub address: String,

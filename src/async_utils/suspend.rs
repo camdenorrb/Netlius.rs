@@ -1,7 +1,8 @@
-use async_std::task::{Context, Poll, Waker};
 use async_std::pin::Pin;
 use async_std::prelude::Future;
-use async_std::sync::{Arc};
+use async_std::sync::Arc;
+use async_std::task::{Context, Poll, Waker};
+
 use crate::async_utils::holder::UnsafeHolder;
 
 // You need to use a Holder rather than a Mutex to utilize this

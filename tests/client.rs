@@ -1,6 +1,7 @@
-use netlius::Netlius;
-use netlius::net::packet::Packet;
 use async_std::task::block_on;
+
+use netlius::net::packet::Packet;
+use netlius::Netlius;
 
 #[test]
 fn send_basic_message() {
