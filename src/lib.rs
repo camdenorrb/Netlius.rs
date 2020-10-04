@@ -1,5 +1,5 @@
 #![feature(unsafe_cell_get_mut)]
-//#![feature(async_closure)]
+#![feature(async_closure)]
 
 use crate::net::client::Client;
 use crate::net::server::Server;
