@@ -1,17 +1,19 @@
 use crate::net::client::Client;
 
 use async_std::net::{TcpListener, SocketAddr};
-use async_std::task::{spawn};
+use async_std::task::{spawn, JoinHandle};
 
 use async_std::sync::{Arc, Mutex};
-use futures::{StreamExt, AsyncReadExt};
-use async_std::io;
+use futures::{StreamExt};
 use crate::async_utils::suspend::Suspend;
 use crate::async_utils::holder::UnsafeHolder;
-
+use futures::executor::block_on;
 
 pub struct Server {
     pub address: String,
+    pub task: Option<JoinHandle<()>>,
+    pub connect_listeners: Arc<Mutex<Vec<Box<dyn Fn(&Client)>>>>,
+    pub disconnect_listeners: Arc<Mutex<Vec<Box<dyn Fn(&Client)>>>>,
     pub clients: Arc<Mutex<Vec<Arc<Mutex<Client>>>>>,
 }
 
@@ -23,12 +25,19 @@ impl Server {
         let address = self.address.parse().unwrap();
         let clients = self.clients.clone();
 
+        let connect_listeners = self.connect_listeners.clone();
+        let disconnect_listeners = self.disconnect_listeners.clone();
+
         let server_start_suspend = Arc::new(UnsafeHolder::new(Suspend::new(true)));
         let server_start_suspend_clone = server_start_suspend.clone();
 
-        spawn(async move {
+        let task = spawn(async move {
 
             let clients = clients.clone();
+
+            let connect_listeners = connect_listeners.clone();
+            let disconnect_listeners = disconnect_listeners.clone();
+
             let listener = TcpListener::bind::<SocketAddr>(address).await.unwrap();
             let incoming = listener.incoming();
 
@@ -37,22 +46,45 @@ impl Server {
             }
 
             incoming.for_each_concurrent(None, |stream| async {
+
                 let clients = clients.clone();
                 let client_arc = Arc::new(Mutex::new(Client::new(stream.unwrap())));
+
+                let connect_listeners = connect_listeners.clone();
+                let disconnect_listeners = disconnect_listeners.clone();
 
                 clients.lock().await.push(client_arc.clone());
 
                 spawn(async move {
 
-                    // TODO: Call connect listeners here and remove rest
+                    let connect_listeners = connect_listeners.clone();
+                    let disconnect_listeners = disconnect_listeners.clone();
 
                     let client_arc = client_arc.clone();
-                    let client = client_arc.lock().await;
-                    let (mut reader, mut writer) = client.tcp_stream.as_ref().unwrap().split();
+                    let mut client = client_arc.lock().await;
 
-                    loop {
-                        io::copy(&mut reader, &mut writer).await.unwrap();
-                    }
+                    // Connect listeners will handle the client
+                    connect_listeners.lock().await.iter().for_each(|it| {
+                        it(&client)
+                    });
+
+                    client.on_disconnect(Box::new(|client| {
+
+                        block_on(async {
+                            disconnect_listeners.clone().lock().await.iter().for_each(|it| {
+                                it(client)
+                            })
+                        })
+                        //let disconnect_listeners = disconnect_listeners.clone();
+
+
+                        //block_on(async {
+                            //disconnect_listeners;
+                            //disconnect_listeners.clone();
+                            //disconnect_listeners.lock().await.iter().for_each(|it| {
+                            //    it(client)
+                            //});
+                    }));
                 });
             }).await;
         });
@@ -60,22 +92,22 @@ impl Server {
         unsafe {
             server_start_suspend.get_mut().await;
         }
+
+        self.task = Some(task);
+    }
+
+    pub async fn stop(self) {
+        // TODO: Call disconnect_listeners on all clients
+        self.task.expect("Couldn't retrieve server task").cancel();
     }
 
 
-
-    /*
-    pub fn stop(&self) {
-
-    }
-    */
-
-
-    pub fn on_connect(&self, listener: fn (&Client)) {
+    pub async fn on_connect(&mut self, listener: Box<dyn Fn(&Client)>) {
+        self.connect_listeners.lock().await.push(listener);
     }
 
-    pub fn on_disconnect(&self, listener: fn (&Client)) {
-
+    pub async fn on_disconnect(&mut self, listener: Box<dyn Fn(&Client)>) {
+        self.disconnect_listeners.lock().await.push(listener);
     }
 
 }

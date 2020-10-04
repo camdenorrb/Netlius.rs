@@ -11,7 +11,7 @@ use async_std::sync::Arc;
 use core::mem;
 //use futures::{AsyncReadExt, AsyncWriteExt};
 
-type ClientListener = fn(client: &Client);
+type ClientListener = Box<dyn Fn(&Client)>;
 
 #[derive(Debug, Enum)]
 pub enum ClientEvent {
@@ -84,11 +84,11 @@ impl Client {
     }
 
 
-    pub fn on_connect(&mut self, listener: fn(&Client)) {
+    pub fn on_connect(&mut self, listener: Box<dyn Fn(&Client)>) {
         self.listeners[ClientEvent::Connect].push(listener)
     }
 
-    pub fn on_disconnect(&mut self, listener: fn(&Client)) {
+    pub fn on_disconnect(&mut self, listener: Box<dyn Fn(&Client)>) {
         self.listeners[ClientEvent::Disconnect].push(listener)
     }
 

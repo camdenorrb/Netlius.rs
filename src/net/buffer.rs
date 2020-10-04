@@ -19,6 +19,7 @@ impl ByteBuffer {
     }
 
 
+    // Make this a trait then make another trait that that trait extends and impl the rest
     pub fn read_bytes(&mut self, size: usize) -> &[u8] {
 
         let end_position = self.position + size;
