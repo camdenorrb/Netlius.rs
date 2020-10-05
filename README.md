@@ -1,2 +1,2 @@
 # Netlius.rs
-Rust version of Netlius, wip
+Rust version of [Netlius](https://github.com/camdenorrb/Netlius), experimental
