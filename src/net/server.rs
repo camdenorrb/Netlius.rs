@@ -1,4 +1,4 @@
-use std::ops::DerefMut;
+use std::ops::{DerefMut, Deref};
 
 use async_std::net::{SocketAddr, TcpListener};
 use async_std::sync::{Arc, Mutex};
@@ -68,20 +68,28 @@ impl Server {
                     let client_arc = client_arc.clone();
                     let mut client = client_arc.clone().lock().await;
 
-                    client.on_disconnect(Arc::new(move |client_arc| {
+                    client.on_disconnect(Arc::new(|client| {
 
                         let disconnect_listeners = disconnect_listeners.clone();
 
-                        client_arc.clone();
+                        let client_arc_clone = client_arc.clone();
 
-                        spawn(async {
+                        spawn(async move {
 
                             disconnect_listeners.clone().lock().await.iter().for_each(|it| {
-                                it(client_arc);
+                                block_on(async {
+                                    it(client_arc_clone.lock().await.deref()).await;
+                                });
                             });
 
-                            clients.lock().await.deref_mut().retain(async |it| {
-                                it.lock().await.uuid != client.uuid
+                            clients.lock().await.deref_mut().retain(move |it| {
+
+                                let client_arc_clone = client_arc_clone.clone();
+
+                                block_on(async move {
+                                    true
+                                    //it.lock().await.uuid != true//client.uuid
+                                })
                             });
 
                         });
