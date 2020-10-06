@@ -1,5 +1,6 @@
 use async_std::task::block_on;
 
+use netlius::net::client::Client;
 use netlius::net::packet::Packet;
 use netlius::Netlius;
 

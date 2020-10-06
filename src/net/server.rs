@@ -1,10 +1,10 @@
-use std::borrow::BorrowMut;
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 
 use async_std::net::{SocketAddr, TcpListener};
 use async_std::sync::{Arc, Mutex};
 use async_std::task::{JoinHandle, spawn};
 use futures::executor::block_on;
+use futures::future::BoxFuture;
 use futures::StreamExt;
 
 use crate::async_utils::holder::UnsafeHolder;
@@ -14,14 +14,16 @@ use crate::net::client::Client;
 pub struct Server {
     pub address: String,
     pub task: Option<JoinHandle<()>>,
-    pub connect_listeners: Arc<Mutex<Vec<Arc<dyn Fn(&mut Client) + Send + Sync>>>>,
-    pub disconnect_listeners: Arc<Mutex<Vec<Arc<dyn Fn(&Client) + Send + Sync>>>>,
+    pub connect_listeners: Arc<Mutex<Vec<Box<dyn Fn(&mut Client) -> BoxFuture<()> + Send + Sync>>>>,
+    pub disconnect_listeners: Arc<Mutex<Vec<Box<dyn Fn(&Client) -> BoxFuture<()> + Send + Sync>>>>,
     pub clients: Arc<Mutex<Vec<Arc<Mutex<Client>>>>>,
 }
 
 impl Server {
 
     // TODO: Use a threadpool for spawn
+    // TODO: Use Result
+    // TODO: Make Address more flexible like the exact argument that TcpStream#connect takes
     pub async fn start(&mut self) {
 
         let address = self.address.parse().unwrap();
@@ -64,32 +66,32 @@ impl Server {
                     let disconnect_listeners = disconnect_listeners.clone();
 
                     let client_arc = client_arc.clone();
-                    let mut client = client_arc.lock().await;
+                    let mut client = client_arc.clone().lock().await;
 
-                    client.on_disconnect(Arc::new(move |client| {
+                    client.on_disconnect(Arc::new(move |client_arc| {
 
                         let disconnect_listeners = disconnect_listeners.clone();
 
-                        block_on(async {
+                        client_arc.clone();
+
+                        spawn(async {
 
                             disconnect_listeners.clone().lock().await.iter().for_each(|it| {
-                                it(client)
+                                it(client_arc);
                             });
 
-                            clients.lock().await.deref_mut().retain(|it| {
-                                block_on(async {
-                                    it.lock().await.uuid != client.uuid
-                                })
+                            clients.lock().await.deref_mut().retain(async |it| {
+                                it.lock().await.uuid != client.uuid
                             });
+
                         });
 
                     }));
 
                     // Connect listeners will handle the client
-                    connect_listeners.lock().await.iter().for_each(|it| {
-                        it.clone().deref()(&mut client)
-                    });
-
+                    for connect_listener in connect_listeners.lock().await.deref_mut() {
+                        connect_listener(&mut client).await;
+                    }
                 });
             }).await;
         });
@@ -113,11 +115,11 @@ impl Server {
     }
 
 
-    pub async fn on_connect(&mut self, listener: Arc<dyn Fn(&mut Client) + Send + Sync>) {
+    pub async fn on_connect(&mut self, listener: Box<dyn Fn(&mut Client) -> BoxFuture<()> + Send + Sync>) {
         self.connect_listeners.lock().await.push(listener);
     }
 
-    pub async fn on_disconnect(&mut self, listener: Arc<dyn Fn(&Client) + Send + Sync>) {
+    pub async fn on_disconnect(&mut self, listener: Box<dyn Fn(&Client) -> BoxFuture<()> + Send + Sync>) {
         self.disconnect_listeners.lock().await.push(listener);
     }
 
